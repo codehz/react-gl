@@ -1,28 +1,51 @@
-import type { RenderNode } from "./reconciler";
+import type { RenderNode, RenderRoot } from "./reconciler";
+import { Color } from "./types";
 
-abstract class BuiltinNode<Tag extends string, Props extends object>
-  implements RenderNode
-{
-  tag: Tag;
-  props: Props;
-  abstract readonly children: RenderNode[];
+abstract class BuiltinNode<Tag extends string> implements RenderNode {
+  readonly tag: Tag;
+  abstract readonly props: any;
+  hidden = false;
+  #root?: RenderRoot;
 
-  constructor(tag: Tag, props: Props) {
+  constructor(tag: Tag) {
     this.tag = tag;
-    this.props = props;
   }
-}
-
-class reset extends BuiltinNode<"reset", {}> {
   get children(): RenderNode[] {
-    throw new Error("reset cannot have children");
+    throw new Error(this.tag + " cannot have children");
   }
-
-  constructor(props: {}) {
-    super("reset", props);
+  notifyChildren(): void {}
+  notifyProps(): void {}
+  mount(root: RenderRoot): void {
+    this.#root = root;
+  }
+  unmount(): void {}
+  commit(): void {}
+  get root() {
+    return this.#root;
   }
 }
 
-const exported = { reset } as const;
+class reset extends BuiltinNode<"reset"> {
+  static defaultProps = { color: [0, 0, 0, 0] as Color };
+  readonly props: { color: Color } = reset.defaultProps;
+  constructor() {
+    super("reset");
+  }
+}
+
+class group extends BuiltinNode<"group"> {
+  get props() {
+    return {};
+  }
+  #children: RenderNode[] = [];
+  get children() {
+    return this.#children;
+  }
+  constructor() {
+    super("group");
+  }
+}
+
+const exported = { reset, group } as const;
 export type Builtins = typeof exported;
 export default exported;

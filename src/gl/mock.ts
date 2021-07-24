@@ -5,6 +5,10 @@ export default class MockRoot implements RenderRoot {
   children: RenderNode[] = [];
   #root: any;
 
+  get context(): WebGLRenderingContext {
+    throw new Error("mock");
+  }
+
   constructor() {
     this.#root = Reconciler.createContainer(this, 0, false, null);
     console.log(this.#root);

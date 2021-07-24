@@ -1,17 +1,25 @@
 import ReactReconciler, { HostConfig } from "react-reconciler";
 import builtins from "./builtins";
+import { diff, apply } from "./diff";
 
 export type RenderRoot = {
-  children: RenderNode[];
+  readonly context: WebGLRenderingContext;
+  readonly children: RenderNode[];
 };
 
 type RenderTag = string;
 
 export interface RenderNode {
-  tag: RenderTag;
-  props: object;
-  children: RenderNode[];
+  readonly tag: RenderTag;
+  readonly props: object;
+  readonly children: RenderNode[];
+  readonly root?: RenderRoot;
   hidden?: boolean;
+  notifyChildren(): void;
+  notifyProps(): void;
+  mount(root: RenderRoot): void;
+  unmount(): void;
+  commit(): void;
 }
 
 const MyHostConfig: HostConfig<
@@ -24,7 +32,7 @@ const MyHostConfig: HostConfig<
   never,
   RenderNode,
   null,
-  null,
+  ReturnType<typeof diff>,
   never,
   number,
   number
@@ -41,7 +49,9 @@ const MyHostConfig: HostConfig<
     _internalHandle: null
   ): RenderNode {
     if (type in builtins) {
-      return (builtins as any)[type](props);
+      const ret = new (builtins as any)[type]();
+      apply(diff(ret.props, props), ret.props);
+      return ret;
     }
     throw new Error(`Unsupported tag: ${type}`);
   },
@@ -60,24 +70,25 @@ const MyHostConfig: HostConfig<
   },
 
   finalizeInitialChildren(
-    _instance: RenderNode,
+    instance: RenderNode,
     _type: RenderTag,
     _props: object,
-    _rootContainer: RenderRoot,
+    rootContainer: RenderRoot,
     _hostContext: null
   ): boolean {
+    instance.mount(rootContainer);
     return false;
   },
 
   prepareUpdate(
     _instance: RenderNode,
     _type: RenderTag,
-    _oldProps: object,
-    _newProps: object,
+    oldProps: object,
+    newProps: object,
     _rootContainer: RenderRoot,
     _hostContext: null
-  ): null {
-    return null;
+  ) {
+    return diff(oldProps, newProps);
   },
 
   shouldSetTextContent(_type: RenderTag, _props: object): boolean {
@@ -130,6 +141,7 @@ const MyHostConfig: HostConfig<
 
   appendChild(parentInstance: RenderNode, child: RenderNode): void {
     parentInstance.children.push(child);
+    parentInstance.notifyChildren();
   },
 
   appendChildToContainer(container: RenderRoot, child: RenderNode): void {
@@ -145,6 +157,7 @@ const MyHostConfig: HostConfig<
     if (index !== -1) {
       parentInstance.children.splice(index, 0, child);
     }
+    parentInstance.notifyChildren();
   },
 
   insertInContainerBefore(
@@ -159,13 +172,21 @@ const MyHostConfig: HostConfig<
   },
 
   removeChild(parentInstance: RenderNode, child: RenderNode): void {
+    parentInstance.notifyChildren();
     const index = parentInstance.children.indexOf(child);
     if (index !== -1) {
       parentInstance.children.splice(index, 1);
     }
+    child.unmount();
   },
 
-  removeChildFromContainer(_container: RenderRoot, _child: RenderNode): void {},
+  removeChildFromContainer(container: RenderRoot, child: RenderNode): void {
+    const index = container.children.indexOf(child);
+    if (index !== -1) {
+      container.children.splice(index, 1);
+    }
+    child.unmount();
+  },
 
   commitMount(
     _instance: RenderNode,
@@ -176,13 +197,14 @@ const MyHostConfig: HostConfig<
 
   commitUpdate(
     instance: RenderNode,
-    _updatePayload: null,
+    updatePayload: ReturnType<typeof diff>,
     _type: RenderTag,
     _prevProps: object,
-    nextProps: object,
+    _nextProps: object,
     _internalHandle: never
   ): void {
-    instance.props = nextProps;
+    apply(updatePayload, instance.props);
+    instance.notifyProps();
   },
 
   hideInstance(instance: RenderNode): void {
@@ -194,7 +216,7 @@ const MyHostConfig: HostConfig<
   },
 
   clearContainer(container: RenderRoot): void {
-    container.children = [];
+    container.children.length = 0;
   },
 };
 
