@@ -1,17 +1,23 @@
 import { Component } from "react";
 import Reconciler, { RenderNode, RenderRoot } from "./reconciler";
 
-export default class MockRoot implements RenderRoot {
+export default class Renderer implements RenderRoot {
   children: RenderNode[] = [];
   #root: any;
 
-  get context(): WebGLRenderingContext {
-    throw new Error("mock");
+  #loop() {
+    for (const child of this.children) {
+      child.render();
+    }
   }
 
   constructor() {
     this.#root = Reconciler.createContainer(this, 0, false, null);
-    console.log(this.#root);
+    const loop = () => {
+      this.#loop();
+      requestAnimationFrame(loop);
+    };
+    requestAnimationFrame(loop);
   }
 
   render(component: Component<any, any>, callback: () => void) {

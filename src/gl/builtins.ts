@@ -1,3 +1,4 @@
+import { gl } from "./canvas";
 import type { RenderNode, RenderRoot } from "./reconciler";
 import { Color } from "./types";
 
@@ -20,6 +21,7 @@ abstract class BuiltinNode<Tag extends string> implements RenderNode {
   }
   unmount(): void {}
   commit(): void {}
+  render(): void {}
   get root() {
     return this.#root;
   }
@@ -30,6 +32,16 @@ class reset extends BuiltinNode<"reset"> {
   readonly props: { color: Color } = reset.defaultProps;
   constructor() {
     super("reset");
+  }
+
+  render() {
+    gl.clearColor(
+      this.props.color[0],
+      this.props.color[1],
+      this.props.color[2],
+      this.props.color[3]
+    );
+    gl.clear(gl.COLOR_BUFFER_BIT);
   }
 }
 

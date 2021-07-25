@@ -3,7 +3,6 @@ import builtins from "./builtins";
 import { diff, apply } from "./diff";
 
 export type RenderRoot = {
-  readonly context: WebGLRenderingContext;
   readonly children: RenderNode[];
 };
 
@@ -20,6 +19,7 @@ export interface RenderNode {
   mount(root: RenderRoot): void;
   unmount(): void;
   commit(): void;
+  render(): void;
 }
 
 const MyHostConfig: HostConfig<
