@@ -1,4 +1,5 @@
 import { gl } from "./canvas";
+import { apply, DiffResult } from "./diff";
 import type { RenderNode, RenderRoot } from "./reconciler";
 import { Color } from "./types";
 
@@ -15,7 +16,9 @@ abstract class BuiltinNode<Tag extends string> implements RenderNode {
     throw new Error(this.tag + " cannot have children");
   }
   notifyChildren(): void {}
-  notifyProps(): void {}
+  updateProps(diff: DiffResult): void {
+    apply(diff, this.props);
+  }
   mount(root: RenderRoot): void {
     this.#root = root;
   }
@@ -45,6 +48,19 @@ class reset extends BuiltinNode<"reset"> {
   }
 }
 
+class shader extends BuiltinNode<"shader"> {
+  props: {
+    vert: string;
+    frag: string;
+    attr: { [key: string]: TypedArray };
+    uniform: { [key: string]: any };
+  } = {} as any;
+
+  constructor() {
+    super("shader");
+  }
+}
+
 class group extends BuiltinNode<"group"> {
   get props() {
     return {};
@@ -58,6 +74,6 @@ class group extends BuiltinNode<"group"> {
   }
 }
 
-const exported = { reset, group } as const;
+const exported = { reset, group, shader } as const;
 export type Builtins = typeof exported;
 export default exported;

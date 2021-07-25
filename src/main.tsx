@@ -11,7 +11,10 @@ function App() {
     }, 100);
     return () => clearInterval(id);
   }, []);
-  return <reset color={[red, 0, 0, 1]} />;
+  return <>
+    <reset color={[red, 0, 0, 1]} />
+    <shader vert="" frag="" attr-test={0} uniform-demo="" />
+  </>;
 }
 
 root.render(

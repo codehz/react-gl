@@ -25,9 +25,18 @@ type GetPropsNonObject<T extends keyof Builtins> = {
     : never;
 };
 
-type Tt = MapBuiltinProps<Builtins>;
-
 declare global {
+  type TypedArray =
+    | Int8Array
+    | Uint8Array
+    | Int16Array
+    | Uint16Array
+    | Int32Array
+    | Uint32Array
+    | Uint8ClampedArray
+    | Float32Array
+    | Float64Array;
+
   namespace JSX {
     interface ElementChildrenAttribute {
       children: {};
@@ -35,6 +44,10 @@ declare global {
     interface IntrinsicElements {
       reset: GetPropsNonObject<"reset">;
       group: GetPropsNonObject<"group">;
+      shader: {
+        vert: string;
+        frag: string;
+      };
     }
   }
 }

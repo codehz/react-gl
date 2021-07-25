@@ -1,6 +1,6 @@
 import ReactReconciler, { HostConfig } from "react-reconciler";
 import builtins from "./builtins";
-import { diff, apply } from "./diff";
+import { diff, apply, DiffResult } from "./diff";
 
 export type RenderRoot = {
   readonly children: RenderNode[];
@@ -15,7 +15,7 @@ export interface RenderNode {
   readonly root?: RenderRoot;
   hidden?: boolean;
   notifyChildren(): void;
-  notifyProps(): void;
+  updateProps(diff: DiffResult): void;
   mount(root: RenderRoot): void;
   unmount(): void;
   commit(): void;
@@ -203,8 +203,7 @@ const MyHostConfig: HostConfig<
     _nextProps: object,
     _internalHandle: never
   ): void {
-    apply(updatePayload, instance.props);
-    instance.notifyProps();
+    instance.updateProps(updatePayload);
   },
 
   hideInstance(instance: RenderNode): void {
