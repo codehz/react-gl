@@ -1,6 +1,7 @@
 /// <reference types="vite/client" />
 
 import type { Builtins } from "./gl/builtins";
+import type { RenderNode } from "./gl/reconciler";
 
 type Omit<T, K extends keyof T> = Pick<T, Exclude<keyof T, K>>;
 type PartialBy<T, K> = K extends keyof T
@@ -15,15 +16,11 @@ type MapBuiltinProps<T> = {
     : never;
 };
 
-type GetPropsNonObject<T extends keyof Builtins> = {
-  [K in keyof MapBuiltinProps<Builtins>[T]]: MapBuiltinProps<Builtins>[T][K] extends infer V
-    ? V extends Array<any>
-      ? V
-      : V extends Object
-      ? never
-      : V
-    : never;
+type GetProps<T extends keyof Builtins> = {
+  [K in keyof MapBuiltinProps<Builtins>[T]]: MapBuiltinProps<Builtins>[T][K];
 };
+
+type GeneralChildren = { children: JSX.Element[] | JSX.Element };
 
 declare global {
   type TypedArray =
@@ -38,16 +35,31 @@ declare global {
     | Float64Array;
 
   namespace JSX {
+    type Element = RenderNode;
     interface ElementChildrenAttribute {
       children: {};
     }
     interface IntrinsicElements {
-      reset: GetPropsNonObject<"reset">;
-      group: GetPropsNonObject<"group">;
-      shader: {
-        vert: string;
-        frag: string;
-      };
+      reset: GetProps<"reset">;
+      shader: GetProps<"shader"> & GeneralChildren;
+      uniform: GetProps<"uniform">;
+      vao: GetProps<"vao"> & GeneralChildren;
+      attrib:
+        | { index: number; fixed: true; value: Float32Array }
+        | {
+            index: number;
+            size: 1 | 2 | 3 | 4;
+            type:
+              | "byte"
+              | "short"
+              | "unsigned byte"
+              | "unsigned short"
+              | "float";
+            normalized?: boolean;
+            stride?: number;
+            offset?: number;
+          };
+      buffer: GetProps<"buffer">;
     }
   }
 }

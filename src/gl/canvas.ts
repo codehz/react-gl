@@ -8,6 +8,8 @@ document.body.appendChild(canvas);
 
 export const gl = canvas.getContext("webgl")!;
 
+export const ext_vao = gl.getExtension("OES_vertex_array_object")!;
+
 let currentViewport: [number, number] = [0.0, 0.0];
 let first: ((value: [number, number]) => void) | null = null;
 

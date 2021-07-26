@@ -1,4 +1,3 @@
-import { Component } from "react";
 import Reconciler, { RenderNode, RenderRoot } from "./reconciler";
 
 export default class Renderer implements RenderRoot {
@@ -20,7 +19,7 @@ export default class Renderer implements RenderRoot {
     requestAnimationFrame(loop);
   }
 
-  render(component: Component<any, any>, callback: () => void) {
+  render(component: RenderNode, callback: () => void) {
     return Reconciler.updateContainer(component, this.#root, null, callback);
   }
 }

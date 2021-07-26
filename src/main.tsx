@@ -13,7 +13,13 @@ function App() {
   }, []);
   return <>
     <reset color={[red, 0, 0, 1]} />
-    <shader vert="" frag="" attr-test={0} uniform-demo="" />
+    <shader vert="" frag="" mode="triangle fan" count={4}>
+      <uniform name="a" type="int" value={1} />
+      <vao>
+        <attrib index={0} fixed value={new Float32Array([1, 2, 3])} />
+        <attrib index={0} size={1} type="byte" />
+      </vao>
+    </shader>
   </>;
 }
 
