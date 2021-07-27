@@ -3,6 +3,23 @@ import Renderer from "./gl/renderer";
 
 const root = new Renderer();
 
+const vert = `
+  precision mediump float;
+  attribute vec2 pos;
+  void main(void) {
+    gl_Position = vec4(pos, 0.0, 1.0);
+  }
+`;
+
+const frag = `
+  precision mediump float;
+  void main(void) {
+    gl_FragColor = vec4(1, 0.5, 0.0, 1);
+  }
+`;
+
+const data = new Float32Array([-0.5, 0.5, -0.5, -0.5, 0.5, -0.5]);
+
 function App() {
   const [red, setRed] = useState(0);
   useEffect(() => {
@@ -13,11 +30,10 @@ function App() {
   }, []);
   return <>
     <reset color={[red, 0, 0, 1]} />
-    <shader vert="" frag="" mode="triangle fan" count={4}>
-      <uniform name="a" type="int" value={1} />
+    <shader vert={vert} frag={frag} mode="triangles" count={3}>
       <vao>
-        <attrib index={0} fixed value={new Float32Array([1, 2, 3])} />
-        <attrib index={0} size={1} type="byte" />
+        <buffer target="array" usage="static" data={data} />
+        <attrib index={0} size={2} type="float" />
       </vao>
     </shader>
   </>;
