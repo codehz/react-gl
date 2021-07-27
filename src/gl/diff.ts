@@ -10,7 +10,7 @@ function eqArray<T extends string | number>(a: T[], b: T[]): boolean {
 
 function eq<T>(a: T, b: T): boolean {
   if (a === b) return true;
-  if (a === null || b === null) return false;
+  if (a == null || b == null) return false;
   if (typeof a !== typeof b) throw new Error("type mismatched");
   if (typeof a === "object") {
     if (Array.isArray(a)) return eqArray(a, b as any);
