@@ -1,7 +1,9 @@
-import { gl, ext_vao } from "./canvas";
+import { gl } from "./canvas";
 import { apply, DiffResult } from "./diff";
 import type { RenderNode, RenderRoot } from "./reconciler";
 import { Color } from "./types";
+import Program from "./program";
+import { nanoid } from "nanoid";
 
 export abstract class BuiltinNode<Tag extends string> implements RenderNode {
   readonly tag: Tag;
@@ -58,34 +60,30 @@ class reset extends BuiltinNode<"reset"> {
 class vao extends NodeWithChildren<"vao"> {
   props: {} = {};
 
-  #object?: WebGLVertexArrayObjectOES;
+  #id: string;
 
   constructor() {
     super("vao");
+    this.#id = nanoid();
   }
 
   render() {
-    ext_vao.bindVertexArrayOES(this.#object!);
-  }
-
-  mount() {
-    this.#object = ext_vao.createVertexArrayOES()!;
-    ext_vao.bindVertexArrayOES(this.#object!);
-    for (const child of this.children) {
-      child.render();
-    }
-    ext_vao.bindVertexArrayOES(null);
+    Program.current.vao(this.#id, () => {
+      for (const child of this.children) {
+        child.render();
+      }
+    });
   }
 
   notifyChildren() {
-    if (!!this.#object) {
-      ext_vao.deleteVertexArrayOES(this.#object);
-      this.mount();
+    Program.current.vao(this.#id);
+    for (const child of this.children) {
+      child.render();
     }
   }
 
   unmount() {
-    if (this.#object) ext_vao.deleteVertexArrayOES(this.#object);
+    Program.current.delete_vao(this.#id);
   }
 }
 
@@ -132,9 +130,9 @@ class buffer extends BuiltinNode<"buffer"> {
 
 class attrib extends BuiltinNode<"attrib"> {
   props:
-    | { index: number; fixed: true; value: Float32Array }
+    | { name: string; fixed: true; value: Float32Array }
     | {
-        index: number;
+        name: string;
         size: 1 | 2 | 3 | 4;
         type: "byte" | "short" | "unsigned byte" | "unsigned short" | "float";
         normalized?: boolean;
@@ -154,22 +152,26 @@ class attrib extends BuiltinNode<"attrib"> {
     }
   }
 
+  get #index() {
+    return Program.current.attribute(this.props.name);
+  }
+
   render() {
     if ("fixed" in this.props) {
       if (this.props.value.length == 1) {
-        gl.vertexAttrib1fv(this.props.index, this.props.value);
+        gl.vertexAttrib1fv(this.#index, this.props.value);
       } else if (this.props.value.length == 2) {
-        gl.vertexAttrib2fv(this.props.index, this.props.value);
+        gl.vertexAttrib2fv(this.#index, this.props.value);
       } else if (this.props.value.length == 3) {
-        gl.vertexAttrib3fv(this.props.index, this.props.value);
+        gl.vertexAttrib3fv(this.#index, this.props.value);
       } else if (this.props.value.length == 4) {
-        gl.vertexAttrib4fv(this.props.index, this.props.value);
+        gl.vertexAttrib4fv(this.#index, this.props.value);
       } else {
         throw new Error("unsupported attrib size");
       }
     } else {
       gl.vertexAttribPointer(
-        this.props.index,
+        this.#index,
         this.props.size,
         this.props.type === "byte"
           ? gl.BYTE
@@ -184,14 +186,14 @@ class attrib extends BuiltinNode<"attrib"> {
         this.props.stride ?? 0,
         this.props.offset ?? 0
       );
-      gl.enableVertexAttribArray(this.props.index);
+      gl.enableVertexAttribArray(this.#index);
     }
   }
 }
 
 class uniform extends BuiltinNode<"uniform"> {
   props: {
-    index: number;
+    name: string;
     type:
       | "int"
       | "float"
@@ -212,38 +214,42 @@ class uniform extends BuiltinNode<"uniform"> {
     super("uniform");
   }
 
+  get #index() {
+    return Program.current.uniform(this.props.name);
+  }
+
   render() {
     if (this.props.type === "int") {
-      gl.uniform1i(this.props.index, this.props.value);
+      gl.uniform1i(this.#index, this.props.value);
     } else if (this.props.type === "float") {
-      gl.uniform1f(this.props.index, this.props.value);
+      gl.uniform1f(this.#index, this.props.value);
     } else if (this.props.type === "vec2") {
-      gl.uniform2fv(this.props.index, this.props.value);
+      gl.uniform2fv(this.#index, this.props.value);
     } else if (this.props.type === "ivec2") {
-      gl.uniform2iv(this.props.index, this.props.value);
+      gl.uniform2iv(this.#index, this.props.value);
     } else if (this.props.type === "vec3") {
-      gl.uniform3fv(this.props.index, this.props.value);
+      gl.uniform3fv(this.#index, this.props.value);
     } else if (this.props.type === "ivec3") {
-      gl.uniform3iv(this.props.index, this.props.value);
+      gl.uniform3iv(this.#index, this.props.value);
     } else if (this.props.type === "vec4") {
-      gl.uniform4fv(this.props.index, this.props.value);
+      gl.uniform4fv(this.#index, this.props.value);
     } else if (this.props.type === "ivec4") {
-      gl.uniform4iv(this.props.index, this.props.value);
+      gl.uniform4iv(this.#index, this.props.value);
     } else if (this.props.type === "mat2") {
       gl.uniformMatrix2fv(
-        this.props.index,
+        this.#index,
         !!this.props.transpose,
         this.props.value
       );
     } else if (this.props.type === "mat3") {
       gl.uniformMatrix3fv(
-        this.props.index,
+        this.#index,
         !!this.props.transpose,
         this.props.value
       );
     } else if (this.props.type === "mat4") {
       gl.uniformMatrix4fv(
-        this.props.index,
+        this.#index,
         !!this.props.transpose,
         this.props.value
       );
@@ -268,56 +274,20 @@ class shader extends NodeWithChildren<"shader"> {
     index?: "unsigned byte" | "unsigned short";
   } = {} as any;
 
-  #program?: WebGLProgram;
+  #program = new Program();
 
   constructor() {
     super("shader");
   }
 
-  #compileShader(type: number, source: string) {
-    const shader = gl.createShader(type)!;
-    try {
-      gl.shaderSource(shader, source);
-      gl.compileShader(shader);
-      if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-        throw new Error(gl.getShaderInfoLog(shader)!);
-      }
-    } catch (e) {
-      gl.deleteShader(shader);
-      throw e;
-    }
-    return shader;
-  }
-
-  #recompile() {
-    this.#program = gl.createProgram()!;
-    try {
-      gl.attachShader(
-        this.#program,
-        this.#compileShader(gl.VERTEX_SHADER, this.props.vert)
-      );
-      gl.attachShader(
-        this.#program,
-        this.#compileShader(gl.FRAGMENT_SHADER, this.props.frag)
-      );
-      gl.linkProgram(this.#program);
-      if (!gl.getProgramParameter(this.#program, gl.LINK_STATUS)) {
-        throw new Error(gl.getProgramInfoLog(this.#program)!);
-      }
-    } catch (e) {
-      gl.deleteProgram(this.#program);
-      throw e;
-    }
-  }
-
   mount() {
-    this.#recompile();
+    this.#program.recompile(this.props.vert, this.props.frag);
   }
 
   updateProps(diff: DiffResult) {
     super.updateProps(diff);
     if (diff.some(([path]) => path == "vert" || path == "frag")) {
-      this.#recompile();
+      this.#program.recompile(this.props.vert, this.props.frag);
     }
   }
 
@@ -340,10 +310,11 @@ class shader extends NodeWithChildren<"shader"> {
   }
 
   render() {
-    gl.useProgram(this.#program!);
-    for (const child of this.children) {
-      child.render();
-    }
+    this.#program.use(() => {
+      for (const child of this.children) {
+        child.render();
+      }
+    });
     if (!!this.props.index) {
       gl.drawElements(
         this.mode,

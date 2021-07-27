@@ -33,7 +33,7 @@ function App() {
     <shader vert={vert} frag={frag} mode="triangles" count={3}>
       <vao>
         <buffer target="array" usage="static" data={data} />
-        <attrib index={0} size={2} type="float" />
+        <attrib name="pos" size={2} type="float" />
       </vao>
     </shader>
   </>;

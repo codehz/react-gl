@@ -45,9 +45,9 @@ declare global {
       uniform: GetProps<"uniform">;
       vao: GetProps<"vao"> & GeneralChildren;
       attrib:
-        | { index: number; fixed: true; value: Float32Array }
+        | { name: string; fixed: true; value: Float32Array }
         | {
-            index: number;
+            name: string;
             size: 1 | 2 | 3 | 4;
             type:
               | "byte"
