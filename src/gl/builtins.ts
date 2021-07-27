@@ -168,7 +168,6 @@ class attrib extends BuiltinNode<"attrib"> {
         throw new Error("unsupported attrib size");
       }
     } else {
-      gl.enableVertexAttribArray(this.props.index);
       gl.vertexAttribPointer(
         this.props.index,
         this.props.size,
@@ -185,13 +184,14 @@ class attrib extends BuiltinNode<"attrib"> {
         this.props.stride ?? 0,
         this.props.offset ?? 0
       );
+      gl.enableVertexAttribArray(this.props.index);
     }
   }
 }
 
 class uniform extends BuiltinNode<"uniform"> {
   props: {
-    name: string;
+    index: number;
     type:
       | "int"
       | "float"
@@ -214,36 +214,36 @@ class uniform extends BuiltinNode<"uniform"> {
 
   render() {
     if (this.props.type === "int") {
-      gl.uniform1i(this.props.name, this.props.value);
+      gl.uniform1i(this.props.index, this.props.value);
     } else if (this.props.type === "float") {
-      gl.uniform1f(this.props.name, this.props.value);
+      gl.uniform1f(this.props.index, this.props.value);
     } else if (this.props.type === "vec2") {
-      gl.uniform2fv(this.props.name, this.props.value);
+      gl.uniform2fv(this.props.index, this.props.value);
     } else if (this.props.type === "ivec2") {
-      gl.uniform2iv(this.props.name, this.props.value);
+      gl.uniform2iv(this.props.index, this.props.value);
     } else if (this.props.type === "vec3") {
-      gl.uniform3fv(this.props.name, this.props.value);
+      gl.uniform3fv(this.props.index, this.props.value);
     } else if (this.props.type === "ivec3") {
-      gl.uniform3iv(this.props.name, this.props.value);
+      gl.uniform3iv(this.props.index, this.props.value);
     } else if (this.props.type === "vec4") {
-      gl.uniform4fv(this.props.name, this.props.value);
+      gl.uniform4fv(this.props.index, this.props.value);
     } else if (this.props.type === "ivec4") {
-      gl.uniform4iv(this.props.name, this.props.value);
+      gl.uniform4iv(this.props.index, this.props.value);
     } else if (this.props.type === "mat2") {
       gl.uniformMatrix2fv(
-        this.props.name,
+        this.props.index,
         !!this.props.transpose,
         this.props.value
       );
     } else if (this.props.type === "mat3") {
       gl.uniformMatrix3fv(
-        this.props.name,
+        this.props.index,
         !!this.props.transpose,
         this.props.value
       );
     } else if (this.props.type === "mat4") {
       gl.uniformMatrix4fv(
-        this.props.name,
+        this.props.index,
         !!this.props.transpose,
         this.props.value
       );
