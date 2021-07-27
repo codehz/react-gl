@@ -1,4 +1,4 @@
-import { gl } from "./canvas";
+import { ext_vao, gl } from "./canvas";
 import { apply, DiffResult } from "./diff";
 import type { RenderNode, RenderRoot } from "./reconciler";
 import { Color } from "./types";
@@ -327,6 +327,7 @@ class shader extends NodeWithChildren<"shader"> {
     } else {
       gl.drawArrays(this.mode, this.props.offset ?? 0, this.props.count);
     }
+    ext_vao.bindVertexArrayOES(null);
   }
 }
 
